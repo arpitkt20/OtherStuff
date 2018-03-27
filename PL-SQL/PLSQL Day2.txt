@@ -1,0 +1,459 @@
+int arr[5];
+char arr1[5];
+arr[0]=10
+arr1[0]='A'
+
+   TYPE typename IS TABLE OF datatype  
+INDEX BY datatype;
+-----------------------------------------------------
+TYPE emp_data IS TABLE OF VARCHAR2(20)  INDEX BY 
+PLS_INTEGER;
+
+emps emp_data;
+
+emps[integer]:=VARCHAR2
+-----------------------------------------------------
+TYPE emp_data IS TABLE OF  integer INDEX BY VARCHAR2(20)
+;
+emps emp_data;
+
+emps[VARCHAR2]:=integer
+name varchar2(20):='anjana';
+emps[name]:=200000;
+
+-------------------------------
+DECLARE
+   TYPE emp_data IS TABLE OF VARCHAR2(20)  INDEX BY 
+PLS_INTEGER;
+   emps emp_data;
+     i integer;
+
+BEGIN
+   -- adding elements to the table
+   emps(1):='Sonal';
+   emps(2):='Anju';
+   emps(3):='Nitin';
+emps(4):='abc';
+
+   -- printing the table
+--dbms_output.put_line(emps.count);
+--dbms_output.put_line(emps.last);
+--dbms_output.put_line(emps.first);
+ i := emps.FIRST;
+   WHILE i IS NOT null 
+LOOP
+       
+      dbms_output.put_line(emps(i));       
+     i:=emps.next(i);
+      
+   END LOOP;
+
+END;
+----------------------------------------------------
+declare 
+limit_in PLS_INTEGER := 200;
+CURSOR emp_cur 
+    IS 
+        SELECT * FROM employees;
+
+    TYPE emp_tab IS TABLE OF emp_cur%ROWTYPE
+        INDEX BY PLS_INTEGER;
+
+    l_employees emp_tab;
+BEGIN   
+    OPEN emp_cur;
+    LOOP
+        FETCH emp_cur 
+            BULK COLLECT INTO l_employees LIMIT limit_in;
+
+        FOR indx IN 1 .. l_employees.COUNT 
+        LOOP
+            dbms_output.put(l_employees(indx).last_name);
+            dbms_output.put(' '||l_employees(indx).employee_id);
+dbms_output.put_line(' ' ||l_employees(indx).salary);
+
+        END LOOP;
+
+        EXIT WHEN l_employees.COUNT < limit_in;
+
+   END LOOP;
+end;
+   CLOSE emp_cur;
+end;
+------------------------------------------------------
+
+
+----------------------------------------------------
+
+
+declare
+s number;
+begin
+ s:=DBMS_UTILITY.get_time;
+UPDATE employees
+         SET salary =salary+1000 where department_id=80;
+UPDATE employees
+         SET salary =salary+1000 where department_id=50;
+dbms_output.put_line(DBMS_UTILITY.get_time-s);
+end;
+
+
+
+
+
+
+
+
+--------------------------------------------------
+DECLARE
+   TYPE idept_t IS TABLE OF employees.department_id%TYPE;
+
+   l_ids   idept_t := idept_t (80,50);
+
+BEGIN
+s:=DBMS_UTILITY.get_time;
+   FORALL indx IN 1 .. l_ids.COUNT
+      UPDATE employees
+         SET salary =salary+1000
+       WHERE department_id = l_ids(indx);
+dbms_output.put_line(DBMS_UTILITY.get_time-s);
+
+END;
+
+-----------------------------------------------
+REF CURSOR is a data type in the Oracle. 
+
+REF CURSOR also referred as Cursor Variables
+
+TYPE reftype  IS REF CURSOR;
+var reftype;
+
+
+
+
+strong -->TYPE typename  IS REF CURSOR return datatype;
+
+weak--->TYPE typename  IS REF CURSOR;
+
+-----------------------------------------------------------
+strong
+-------------------------------------------------------
+Declare
+TYPE empcurtyp IS REF CURSOR RETURN employees%ROWTYPE;
+refcur1  empcurtyp;
+remp refcur1%rowtype;
+Begin
+Open refcur1 for select * from employees where  
+salary>3000;
+loop
+  fetch refcur1 into remp;
+    exit when(refcur1%notfound);
+   dbms_output.put_line(remp.last_name || ' '||remp.employee_id);
+  
+  end loop;
+  close refcur1;
+dbms_output.put_line('-------------');
+ Open refcur1 for select * from employees where  
+department_id=90;
+loop
+  fetch refcur1 into remp;
+    exit when(refcur1%notfound);
+   dbms_output.put_line(remp.last_name || ' '||remp.employee_id);
+  
+  end loop;
+  close refcur1;
+End;
+
+
+
+
+--------------------------------------------------------------
+weak
+
+type typename is ref cursor;
+variable typename;
+open variable for subquery;
+
+-------------------------------------------------------------
+Declare
+TYPE empcurtyp IS REF CURSOR;
+refcur1  empcurtyp;
+DEMP DEPARTMENTS%ROWTYPE;
+remp employees%rowtype;
+Begin
+Open refcur1 for select * from employees where department_id=30;
+loop
+  fetch refcur1 into remp;
+    exit when(refcur1%notfound);
+   dbms_output.put_line(remp.last_name || ' '||remp.employee_id);
+  
+  end loop;
+  close refcur1;
+dbms_output.put_line('-----------------------------');
+
+Open refcur1 for select * from departments;
+loop
+  fetch refcur1 into Demp;
+    exit when(refcur1%notfound);
+   dbms_output.put_line(Demp.department_id || ' '||Demp.DEPARTMENT_NAME);
+  
+  end loop;
+  close refcur1;
+ 
+End;
+
+----------------------------------------------------------
+Exceptions
+
+
+dept(deptno (pk),...)
+1
+2
+3
+emp(....deptno(fk),..)
+100  abc 1 
+101  sss  2
+102   ddd 1
+delete from dept wher deptno=1;
+
+
+-----------------------------------------------------------------
+1)Predefined Exceptions
+2)Numbered Exceptions (non-Predefined Exceptions)
+3)User Defined Exceptions
+---------------------------------------------------------
+1)Predefined Exceptions
+
+
+declare
+remp employees%rowtype;
+
+begin
+select * into remp from employees where employee_id=100;
+dbms_output.put_line('name='|| remp.last_name);
+dbms_output.put_line('job='||remp.job_id);
+dbms_output.put_line('sal='||remp.salary);
+end;
+----------------------------------------------------------
+declare
+remp employees%rowtype;
+
+begin
+select * into remp from employees where employee_id=400;
+select * into remp from employees;
+dbms_output.put_line('name='|| remp.last_name);
+dbms_output.put_line('job='||remp.job_id);
+dbms_output.put_line('sal='||remp.salary);
+exception
+
+when too_many_rows then
+dbms_output.put_line('cannot fetch multiple rows');
+
+when no_data_found then
+dbms_output.put_line('no such emp');
+when others then
+dbms_output.put_line(sqlerrm);
+dbms_output.put_line(sqlcode);
+
+end;
+
+
+
+--------------------------------------
+
+----------------------------------------------------------
+declare
+remp employees%rowtype;
+
+begin
+select * into remp from employees where employee_id=0;
+dbms_output.put_line('name='|| remp.last_name);
+dbms_output.put_line('job='||remp.job_id);
+dbms_output.put_line('sal='||remp.salary);
+exception
+when others then
+dbms_output.put_line(sqlcode);
+dbms_output.put_line(sqlerrm);
+
+end;
+
+
+
+
+
+
+
+--------------------------------------------------------
+2)Numbered Exceptions (non-Predefined Exceptions)
+
+DECLARE
+   child_rec_found EXCEPTION;
+ PRAGMA EXCEPTION_INIT (child_rec_found, -2292);
+BEGIN
+	DELETE from departments 
+      WHERE department_id = 10;
+EXCEPTION
+	WHEN child_rec_found THEN
+   dbms_output.put_line('FK constraint without sub constraints as on delete cascade or set null');
+END;
+
+----------------------------------------------
+
+
+
+DECLARE
+   Invaild_column EXCEPTION;
+ PRAGMA EXCEPTION_INIT (Invaild_column, -904);
+
+begin
+execute immediate 'alter table  departments
+drop column test';
+EXCEPTION
+	WHEN Invaild_column then
+ dbms_output.put_line('column does not exixts in table');
+
+end;
+-----------------------------------------------------------------
+3)user defined exceptions
+declare
+userdefineExp EXCEPTION;
+begin
+ update employees set salary=salary +1000 where employee_id=777;
+ 
+if (sql%found) then
+
+dbms_output.put_line(sql%rowcount || ' updated');
+else
+ raise userdefineExp;
+end if;
+EXCEPTION
+when userdefineExp then
+dbms_output.put_line('no rows updated');
+dbms_output.put_line(sqlcode);
+dbms_output.put_line(sqlerrm);
+
+end;
+
+--------------------------------------------------------
+-->see value for sqlcode and error msg when exception is not raised
+
+declare
+userdefineExp EXCEPTION;
+begin
+ update employees set salary=salary +1000 where 
+
+employee_id=100;
+ 
+if (sql%found) then
+
+dbms_output.put_line(sql%rowcount || ' updated');
+else
+ raise userdefineExp;
+end if;
+dbms_output.put_line(sqlcode);
+dbms_output.put_line(sqlerrm);
+EXCEPTION
+when userdefineExp then
+dbms_output.put_line('no rows updated');
+dbms_output.put_line(sqlcode);
+dbms_output.put_line(sqlerrm);
+
+end;
+o/p
+1 updated
+0
+ORA-0000: normal, successful completion
+--------------------------------------------------
+  --> see value for sqlcode and error msg when exception is  
+     userdefined exception
+declare
+userdefineExp EXCEPTION;
+begin
+ update employees set salary=salary +1000 where 
+
+employee_id=777;
+ 
+if (sql%found) then
+
+dbms_output.put_line(sql%rowcount || ' updated');
+else
+ raise userdefineExp;
+end if;
+dbms_output.put_line(sqlcode);
+dbms_output.put_line(sqlerrm);
+EXCEPTION
+when userdefineExp then
+dbms_output.put_line('no rows updated');
+dbms_output.put_line(sqlcode);
+dbms_output.put_line(sqlerrm);
+
+end;
+o/p
+no rows updated
+1
+User-Defined Exception
+
+
+
+
+
+
+-------------------------------------------------------
+create table error_log(errorNo number, errorMsg varchar2(700));
+
+select * from  error_log;
+
+sqlcode --->error code
+
+sqlerrm--->error message
+
+these functions cannot be used in sql statements.
+------------
+declare
+remp employees%rowtype;
+code number;
+msg varchar2(700);
+begin
+select * into remp from employees where employee_id=400;
+select * into remp from employees;
+dbms_output.put_line('name='|| remp.last_name);
+dbms_output.put_line('job='||remp.job_id);
+dbms_output.put_line('sal='||remp.salary);
+exception
+
+when others then
+msg:=sqlerrm;
+code:=sqlcode; 
+insert into error_log values(code,msg);
+
+end;
+
+
+
+----------------------------------------------------------------
+
+
+RAISE_APPLICATION_ERROR( Error_Number, Error_Message);
+
+-Error_Number  is a parameter between -20000 and  -20999
+-Error_Message is the text associated with this error
+
+
+ 
+
+begin
+ update employees set salary=salary +1000 where employee_id=777;
+ 
+if (sql%found) then
+
+dbms_output.put_line(sql%rowcount || ' updated');
+else
+ RAISE_APPLICATION_ERROR(-20001,'no rows updated');
+end if;
+EXCEPTION
+when others then
+dbms_output.put_line(sqlcode);
+dbms_output.put_line(sqlerrm);
+end;
+
+-------------------------------------------------------------

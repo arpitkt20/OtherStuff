@@ -1,0 +1,449 @@
+--forward declaration
+CREATE OR REPLACE PACKAGE pack1
+as
+procedure test(a number, b number);
+end;
+
+CREATE OR REPLACE PACKAGE BODY pack1
+as
+procedure add(a number, b number);
+procedure test(a number, b number)
+is 
+begin
+add(a,b);
+end;
+procedure add(a number, b number)
+is
+c number;
+begin
+
+c:=a+b;
+dbms_output.put_line(c);
+end;
+
+end;
+
+------------------------------------------------------
+CREATE OR REPLACE PACKAGE personneldetails AS
+  
+  FUNCTION getfullname(nempid NUMBER)
+    RETURN VARCHAR2;
+  
+  FUNCTION getsalary(nempid NUMBER)
+    RETURN NUMBER;
+END personneldetails
+/
+
+CREATE OR REPLACE PACKAGE BODY personneldetails AS
+
+  FUNCTION getfullname(nempid NUMBER) RETURN VARCHAR2 IS
+      fullname VARCHAR2(46);
+  BEGIN
+    SELECT first_name || ',' ||  last_name
+    INTO fullname
+    FROM employees
+    WHERE employee_id = nempid;
+ 
+    RETURN fullname;
+ 
+  EXCEPTION
+  WHEN NO_DATA_FOUND THEN
+dbms_output.put_line(sqlerrm);
+  WHEN TOO_MANY_ROWS THEN
+    dbms_output.put_line(sqlerrm);
+  END; 
+ 
+
+  FUNCTION getsalary(nempid NUMBER) RETURN NUMBER IS
+    nsalary NUMBER(8,2);
+  BEGIN
+    SELECT salary
+    INTO nsalary
+    FROM employees
+    WHERE employee_id = nempid;
+ 
+    RETURN nsalary;
+ 
+    EXCEPTION
+      WHEN NO_DATA_FOUND THEN
+        RETURN NULL;
+      WHEN TOO_MANY_ROWS THEN
+        RETURN NULL;
+  END;
+end;
+/
+------------------------
+declare
+name varchar2(30);
+sal number;
+begin
+name:=personneldetails.getfullname(100);
+sal:=personneldetails.getsalary(100);
+dbms_output.put_line(name);
+
+dbms_output.put_line(sal);
+end;
+
+
+
+
+-------------------------------------------------------------
+create or replace package pack2
+as
+cursor cemp is select * from employees;
+remp cemp%rowtype;
+procedure proc1;
+procedure proc2;
+end pack2;
+
+
+
+create or replace package body pack2
+as
+ procedure proc1
+ is
+ begin
+  open cemp;
+   loop
+     fetch cemp into remp;
+     exit when(cemp%rowcount>10);
+     dbms_output.put_line(remp.last_name || ' '||remp.employee_id);
+   end loop;
+  --close cemp;
+ end proc1;
+
+procedure proc2
+ is
+ begin
+   loop
+    fetch cemp into remp;
+    exit when(cemp%notfound);
+    dbms_output.put_line(remp.last_name || ' '||remp.employee_id);
+   end loop;
+  close cemp;
+ end proc2;
+end pack2;
+
+---------------------------------------------------------------
+CREATE OR REPLACE PACKAGE emp_Data AS
+TYPE empcurtyp is ref cursor return  employees%rowtype;
+   PROCEDURE getEmpDetails( emprefcur  out empcurtyp);
+  END ;  
+/
+CREATE OR REPLACE PACKAGE body emp_Data AS
+   PROCEDURE getEmpDetails( emprefcur  out empcurtyp)
+    is
+     begin
+	open emprefcur for select * from employees where department_id=60;
+     end;
+  END;
+
+-------------------------------------
+
+ VARIABLE cv REFCURSOR
+
+set autoprint on
+
+execute emp_Data.getEmpDetails(:cv);
+
+-------------------------------
+TYPE empcurtyp is ref cursor return  employees%rowtype;
+
+ testref empcurtyp;
+
+------------------------------------------
+type sys_refcursor is ref cursor;
+c1 sys_refcursor;
+
+
+------------------------------------
+
+declare
+rec_emp  employees%rowtype;
+cv sys_refcursor;
+Begin
+emp_Data.getEmpDetails(cv);
+loop
+fetch cv into rec_emp;
+exit when cv%notfound;
+dbms_output.put_line('Empno   ' || rec_emp.employee_id);
+dbms_output.put_line('Empname ' || rec_emp.last_name);
+dbms_output.put_line('Salary   ' || rec_emp.salary);
+dbms_output.put_line('--------------------------------');
+end loop;
+End;
+
+
+
+----------------------------------------------------------------
+CREATE OR REPLACE PACKAGE get_Data AS
+     TYPE curtyp is ref cursor ;
+   PROCEDURE getdata(choice number, refcur  out curtyp);
+  END ;  
+/
+CREATE OR REPLACE PACKAGE body get_Data AS
+   PROCEDURE getdata(choice number, refcur  out curtyp)
+    is
+     begin
+        if choice=1 then
+	open refcur for select * from employees where        department_id=60;
+  elsif choice =2 then
+      open refcur for select * from departments;
+   else
+     open refcur for select * from jobs;
+ end if;
+end;
+END;
+
+-------------------------------------
+
+ VARIABLE cv REFCURSOR
+
+set autoprint on
+
+execute get_Data.getdata(1,:cv);
+execute get_Data.getdata(2,:cv);
+execute get_Data.getdata(3,:cv);
+
+-----------------------------------
+
+
+
+declare
+rec_emp  employees%rowtype;
+rec_dept departments%rowtype;
+rec_job jobs%rowtype;
+cv sys_refcursor;
+ch number:=2;
+Begin
+
+get_Data.getdata(ch,cv);
+loop
+if (ch=1) then
+  fetch cv into rec_emp;
+dbms_output.put_line('Empno   ' || rec_emp.employee_id);
+dbms_output.put_line('Empname ' || rec_emp.last_name);
+dbms_output.put_line('Salary   ' || rec_emp.salary);
+dbms_output.put_line('--------------------------------');
+elsif(ch=2) then
+    fetch cv into rec_dept;
+dbms_output.put_line('department_id   ' || rec_dept.department_id);
+dbms_output.put_line('department_name ' || rec_dept.department_name);
+dbms_output.put_line('--------------------------------');
+else
+fetch cv into rec_job;
+dbms_output.put_line('job_id  ' || rec_job.job_id);
+dbms_output.put_line('JOB_TITLE ' || rec_job.JOB_TITLE);
+dbms_output.put_line('--------------------------------');
+end if;     
+exit when cv%notfound;
+
+end loop;
+
+End;
+
+---------------------------
+
+
+---------------------------------------------------------
+
+ trigger on only two database objects -->table and view
+CREATE [OR REPLACE ] TRIGGER trigger_name 
+Timinig {BEFORE | AFTER | INSTEAD OF } 
+ event[DML/DDl/login..]
+[OF col_name] 
+ON table_name /VIEW /SCHEMA
+[REFERENCING OLD AS o NEW AS n] 
+[FOR EACH ROW] 
+WHEN (condition)  
+begin
+-----
+-----
+end;
+
+DML event-->{INSERT [OR] | UPDATE [OR] | DELETE} -->table and view 
+DDl event-->{CREATE [OR] ALTER[OR] DROP]--->ON SCHEMA
+
+DATABASE EVENTS-->STARTUP, (LOGIN, LOGOFF)--->SCHEMA
+-------------------------------------------------------
+TRIGGERS AR OF TWO TYPE
+1)STATEMENT LEVEL
+2)ROW LEVEL---(FOR EACH ROW)
+
+
+
+------------------------------------------------
+1)STATEMENT LEVEL
+
+create or replace trigger employees_bs_upd_trig
+--TIMING
+before 
+--EVENT
+update 
+--ON TABLE
+on employees
+
+begin
+  dbms_output.put_line('before statement trigger invoked');
+end;
+/
+create or replace trigger employees_as_upd_trig
+after update on employees
+begin
+  dbms_output.put_line('after statement trigger invoked');
+end;
+/
+
+create or replace trigger employees_br_upd_trig
+before update on employees
+for each row
+begin
+  dbms_output.put_line('before row trigger invoked');
+end;
+/
+
+create or replace trigger employees_ar_upd_trig
+after update on employees
+for each row
+begin
+  dbms_output.put_line('after row trigger invoked');
+end;
+
+----------------------------------------------------------
+
+create or replace Trigger TrigEmp
+before update or insert or delete on STUDENT
+begin
+IF (INSERTING) THEN
+dbms_output.put_line('INSERT OPERATION ON STUDENT TABLE');
+ELSIF(UPDATING) THEN
+dbms_output.put_line('UPDATE OPERATION ON STUDENT TABLE');
+ELSE
+dbms_output.put_line('DELETE OPERATION ON STUDENT TABLE');
+END IF;
+
+END;
+-----------------------------------------------------------
+create or replace Trigger TrigEmp11
+before update  or delete on STUDENT
+for each row
+begin
+insert into student_history values(:old.rollno,:old.name);
+end;
+--------------------------------
+truncate table student---> trigger is not invoked
+
+-------------------------------------
+30000--100
+
+update emp set sal=sal+1000 where empid=100;
+31000
+
+             insert   delete    update 
+:old.colName  null      BD        BU
+:new.colname   AI       null      AU
+
+---------------------------------------------------------
+create or replace Trigger TrigEmp11
+before update   on employees
+OF salary
+for each row
+begin
+if(:old.salary >:new.salary) then
+raise_application_error(-20002,'cannot decrement emp sal ');
+end if;
+end;
+
+3000
+
+update employees set salary=salary+1000;
+
+old.salary -->3000
+new.salary-->4000
+3000>4000
+
+update employees set salary=salary-1000;
+
+old.salary -->3000
+new.salary-->2000
+
+3000>2000
+--------------------------------------------------------
+DDl
+
+
+create trigger ddlevtTrigger
+before
+alter 
+on schema
+begin
+raise_application_error(-20002,'cannot alter the schema');
+end;
+
+------------------------------------------
+
+create trigger ddlevtTrigger
+before
+drop 
+on schema
+begin
+raise_application_error(-20002,'cannot drop a object');
+end;
+--------------------------------------------------
+
+follows keyword in trigger is from 11g version
+
+create or replace trigger employees_br_upd_trig1
+before update on employees
+for each row
+begin
+  dbms_output.put_line('before row trigger trig1 invoked');
+end;
+/
+create or replace trigger employees_br_upd_trig2
+before update on employees
+for each row
+follows employees_br_upd_trig1
+begin
+  dbms_output.put_line('before row trigger trig2 invoked');
+end;
+
+
+
+ update employees set salary=salary+100 where department_id=90;
+
+
+--3
+before statement  trigger
+before row  trigger
+after row  trigger
+before row  trigger
+after row  trigger
+before row  trigger
+after row  trigger
+after statement  trigger
+
+
+-------------------------------------------
+
+before statement  trigger
+
+after statement  trigger
+
+before row  trigger
+
+after row  trigger
+-----------------------------------------
+create or replace trigger Prev_Modify
+Before ALTER on Schema
+Begin
+  If ora_dict_obj_name = 'STUDENT'
+      and
+     ora_is_alter_column('ROLLNO') 
+   Then
+    raise_application_error(-20045,'Cannot modify column ');
+  End If;
+End;
+
+
+
